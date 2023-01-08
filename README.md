@@ -3,7 +3,7 @@
 ## Содержимое файла requirements:
 
 requests==2.26.0
-django==2.2.16
+django==3.2
 djangorestframework==3.12.4
 djangorestframework-simplejwt==4.7.2
 PyJWT==2.1.0
@@ -19,18 +19,18 @@ django_filter==21.1
 cd api_yamdb
 Cоздать и активировать виртуальное окружение:
 
-python3 -m venv env
-source env/bin/activate
+python -m venv env
+source env/scripts/activate
 Установить зависимости из файла requirements.txt:
 
-python3 -m pip install --upgrade pip
+python -m pip install --upgrade pip
 pip install -r requirements.txt
 Выполнить миграции:
 
-python3 manage.py migrate
+python manage.py migrate
 Запустить проект:
 
-python3 manage.py runserver
+python manage.py runserver
 
 При желании можно загрузить тестовые данные в базу данных командой:
 python3 manage.py load_csv_data
