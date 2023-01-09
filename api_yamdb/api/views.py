@@ -1,14 +1,14 @@
 from django.shortcuts import get_object_or_404
 
-from rest_framework import filters, mixins, viewsets
+from rest_framework import mixins, viewsets
 
 from rest_framework.permissions import IsAuthenticated
 
-from reviews.models import Category, Review
+from reviews.models import Review
 
-from .permissions import IsAdminOrReadOnly, IsOwnerOrReadOnly
+from .permissions import IsOwnerOrReadOnly
 
-from .serializers import (CategorySerializer, CommentSerializer,
+from .serializers import (CommentSerializer,
                           ReviewSerializer)
 
 
@@ -21,15 +21,6 @@ class CreateListDestroyViewSet(
     """Миксин для получения всех объектов, создания, и удаления."""
 
     pass
-
-
-class CategoryViewSet(CreateListDestroyViewSet):
-    queryset = Category.objects.all()
-    serializer_class = CategorySerializer
-    lookup_field = 'slug'
-    permission_classes = (IsAdminOrReadOnly,)
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ('name',)
 
 
 class ReviewViewSet(viewsets.ModelViewSet):

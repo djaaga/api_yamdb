@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.db.models import Avg
 
 from api_yamdb.settings import LIST_PER_PAGE
-from reviews.models import Category, Genre, GenreTitle, Title
+from reviews.models import Category, Genre, GenreTitle, Title, Review, Comment
 
 
 @admin.register(Category)
@@ -89,6 +89,41 @@ class GenreTitleAdmin(admin.ModelAdmin):
     list_filter = ('genre',)
     list_per_page = LIST_PER_PAGE
     search_fields = ('title',)
+
+
+@admin.register(Review)
+class ReviewAdmin(admin.ModelAdmin):
+    """Класс настройки раздела отзывов."""
+
+    list_display = (
+        'pk',
+        'title',
+        'text',
+        'author',
+        'score',
+        'pub_date',
+    )
+    empty_value_display = 'значение отсутствует'
+    list_filter = ('author', 'score', 'pub_date')
+    list_per_page = LIST_PER_PAGE
+    search_fields = ('author',)
+
+
+@admin.register(Comment)
+class CommentAdmin(admin.ModelAdmin):
+    """Класс настройки раздела комментарии."""
+
+    list_display = (
+        'pk',
+        'review',
+        'text',
+        'author',
+        'pub_date',
+    )
+    empty_value_display = 'значение отсутствует'
+    list_filter = ('author', 'review', 'pub_date')
+    list_per_page = LIST_PER_PAGE
+    search_fields = ('author', 'review',)
 
 
 admin.site.site_title = 'Администрирование YaMDb'
