@@ -33,7 +33,7 @@ python manage.py migrate
 python manage.py runserver
 
 При желании можно загрузить тестовые данные в базу данных командой:
-python3 manage.py load_csv_data
+python manage.py load_csv_data
 
 ./manage.py loaddata data/fixtures.json
 
