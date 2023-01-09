@@ -1,7 +1,6 @@
 from uuid import uuid4
 
 from django.core.mail import send_mail
-
 from rest_framework import filters, permissions, status, views, viewsets
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
@@ -11,10 +10,11 @@ from users.models import User
 from .permissions import IsAdmin
 from .serializers import (AuthUserSignUpSerializer, AuthUserTokenSerializer,
                           UserMeSerializer, UserSerializer)
-from .viewsets import  CreateModelViewSet
+from .viewsets import CreateModelViewSet
 
 
 class UserViewSet(viewsets.ModelViewSet):
+    http_method_names = ['get', 'post', 'patch', 'head', 'delete']
     permission_classes = (IsAdmin,)
     pagination_class = LimitOffsetPagination
     queryset = User.objects.all()
