@@ -24,6 +24,7 @@ from .serializers import (
     UserCreateSerializer, UserRecieveTokenSerializer,
     UserSerializer
 )
+from .utils import send_confirmation_code
 
 
 class UserCreateViewSet(mixins.CreateModelMixin,
@@ -40,12 +41,35 @@ class UserCreateViewSet(mixins.CreateModelMixin,
         serializer = UserCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user, _ = User.objects.get_or_create(**serializer.validated_data)
-        #confirmation_code = default_token_generator.make_token(user)
-        #send_confirmation_code(
-        #    email=user.email,
-        #    confirmation_code=confirmation_code
-        #)
+        confirmation_code = default_token_generator.make_token(user)
+        send_confirmation_code(
+            email=user.email,
+            confirmation_code=confirmation_code
+        )
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class UserReceiveTokenViewSet(mixins.CreateModelMixin,
+                              viewsets.GenericViewSet):
+    """Вьюсет для получения пользователем JWT токена."""
+
+    queryset = User.objects.all()
+    serializer_class = UserRecieveTokenSerializer
+    permission_classes = (permissions.AllowAny,)
+
+    def create(self, request, *args, **kwargs):
+        """Предоставляет пользователю JWT токен по коду подтверждения."""
+        serializer = UserRecieveTokenSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        username = serializer.validated_data.get('username')
+        confirmation_code = serializer.validated_data.get('confirmation_code')
+        user = get_object_or_404(User, username=username)
+
+        if not default_token_generator.check_token(user, confirmation_code):
+            message = {'confirmation_code': 'Код подтверждения невалиден'}
+            return Response(message, status=status.HTTP_400_BAD_REQUEST)
+        message = {'token': str(AccessToken.for_user(user))}
+        return Response(message, status=status.HTTP_200_OK)
 
 
 class UserViewSet(mixins.ListModelMixin,
@@ -132,3 +156,57 @@ class TitleViewSet(viewsets.ModelViewSet):
         if self.request.method == 'GET':
             return TitleGETSerializer
         return TitleSerializer
+
+
+class ReviewViewSet(viewsets.ModelViewSet):
+    """Вьюсет для обьектов модели Review."""
+
+    serializer_class = ReviewSerializer
+    permission_classes = (
+        permissions.IsAuthenticatedOrReadOnly,
+        IsSuperUserIsAdminIsModeratorIsAuthor
+    )
+
+    def get_title(self):
+        """Возвращает объект текущего произведения."""
+        title_id = self.kwargs.get('title_id')
+        return get_object_or_404(Title, pk=title_id)
+
+    def get_queryset(self):
+        """Возвращает queryset c отзывами для текущего произведения."""
+        return self.get_title().reviews.all()
+
+    def perform_create(self, serializer):
+        """Создает отзыв для текущего произведения,
+        где автором является текущий пользователь."""
+        serializer.save(
+            author=self.request.user,
+            title=self.get_title()
+        )
+
+
+class CommentViewSet(viewsets.ModelViewSet):
+    """Вьюсет для обьектов модели Comment."""
+
+    serializer_class = CommentSerializer
+    permission_classes = (
+        permissions.IsAuthenticatedOrReadOnly,
+        IsSuperUserIsAdminIsModeratorIsAuthor
+    )
+
+    def get_review(self):
+        """Возвращает объект текущего отзыва."""
+        review_id = self.kwargs.get('review_id')
+        return get_object_or_404(Review, pk=review_id)
+
+    def get_queryset(self):
+        """Возвращает queryset c комментариями для текущего отзыва."""
+        return self.get_review().comments.all()
+
+    def perform_create(self, serializer):
+        """Создает комментарий для текущего отзыва,
+        где автором является текущий пользователь."""
+        serializer.save(
+            author=self.request.user,
+            review=self.get_review()
+        )
