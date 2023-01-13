@@ -6,24 +6,19 @@ from rest_framework import filters, mixins, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
-
 from reviews.models import Category, Genre, Review, Title
 from users.models import User
 
 from .filters import TitleFilter
 from .mixins import CreateListDestroyViewSet
-from .permissions import (
-    AnonimReadOnly,
-    IsSuperUserIsAdminIsModeratorIsAuthor,
-    IsSuperUserOrIsAdminOnly
-)
-from .serializers import (
-    CategorySerializer, CommentSerializer,
-    GenreSerializer, ReviewSerializer,
-    TitleGETSerializer, TitleSerializer,
-    UserCreateSerializer, UserRecieveTokenSerializer,
-    UserSerializer
-)
+from .permissions import (AnonimReadOnly,
+                          IsSuperUserIsAdminIsModeratorIsAuthor,
+                          IsSuperUserOrIsAdminOnly)
+from .serializers import (CategorySerializer, CommentSerializer,
+                          GenreSerializer, RegisterDataSerializer,
+                          ReviewSerializer, TitleGETSerializer,
+                          TitleSerializer, UserCreateSerializer,
+                          UserRecieveTokenSerializer, UserSerializer)
 from .utils import send_confirmation_code
 
 
@@ -38,15 +33,33 @@ class UserCreateViewSet(mixins.CreateModelMixin,
     def create(self, request):
         """Создает объект класса User и
         отправляет на почту пользователя код подтверждения."""
-        serializer = UserCreateSerializer(data=request.data)
+        if 'username' in request.data and 'email' in request.data:
+            if User.objects.filter(
+                username=request.data['username'],
+                email=request.data['email']
+            ).exists():
+                user = get_object_or_404(
+                    User,
+                    username=request.data['username']
+                )
+                confirmation_code = default_token_generator.make_token(user)
+                send_confirmation_code
+                return Response(request.data, status=status.HTTP_200_OK)
+            else:
+                serializer = UserCreateSerializer(data=request.data)
+                serializer.is_valid(raise_exception=True)
+                user, _ = User.objects.get_or_create(
+                    **serializer.validated_data
+                    )
+                confirmation_code = default_token_generator.make_token(user)
+                send_confirmation_code(
+                    email=user.email,
+                    confirmation_code=confirmation_code
+                )
+                return Response(serializer.data, status=status.HTTP_200_OK)
+        serializer = RegisterDataSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user, _ = User.objects.get_or_create(**serializer.validated_data)
-        confirmation_code = default_token_generator.make_token(user)
-        send_confirmation_code(
-            email=user.email,
-            confirmation_code=confirmation_code
-        )
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserReceiveTokenViewSet(mixins.CreateModelMixin,
@@ -120,7 +133,7 @@ class UserViewSet(mixins.ListModelMixin,
                 partial=True, context={'request': request}
             )
             serializer.is_valid(raise_exception=True)
-            # serializer.save()
+            serializer.save()
             serializer.save(role=request.user.role)
             return Response(serializer.data, status=status.HTTP_200_OK)
         serializer = UserSerializer(request.user)

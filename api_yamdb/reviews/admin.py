@@ -1,8 +1,8 @@
 from django.contrib import admin
 from django.db.models import Avg
+from reviews.models import Category, Comment, Genre, GenreTitle, Review, Title
 
 from api_yamdb.settings import LIST_PER_PAGE
-from reviews.models import Category, Comment, Genre, GenreTitle, Review, Title
 
 
 @admin.register(Category)
