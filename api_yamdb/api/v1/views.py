@@ -16,7 +16,7 @@ from .permissions import (AnonimReadOnly,
                           IsSuperUserOrIsAdminOnly)
 from .serializers import (CategorySerializer, CommentSerializer,
                           GenreSerializer, RegisterDataSerializer,
-                          ReviewSerializer, TitleGETSerializer,
+                          ReviewSerializer, TitleReadSerializer,
                           TitleSerializer, UserCreateSerializer,
                           UserRecieveTokenSerializer, UserSerializer)
 from .utils import send_confirmation_code
@@ -45,18 +45,18 @@ class UserCreateViewSet(mixins.CreateModelMixin,
                 confirmation_code = default_token_generator.make_token(user)
                 send_confirmation_code
                 return Response(request.data, status=status.HTTP_200_OK)
-            else:
-                serializer = UserCreateSerializer(data=request.data)
-                serializer.is_valid(raise_exception=True)
-                user, _ = User.objects.get_or_create(
-                    **serializer.validated_data
-                )
-                confirmation_code = default_token_generator.make_token(user)
-                send_confirmation_code(
-                    email=user.email,
-                    confirmation_code=confirmation_code
-                )
-                return Response(serializer.data, status=status.HTTP_200_OK)
+
+            serializer = UserCreateSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            user, _ = User.objects.get_or_create(
+                **serializer.validated_data
+            )
+            confirmation_code = default_token_generator.make_token(user)
+            send_confirmation_code(
+                email=user.email,
+                confirmation_code=confirmation_code
+            )
+            return Response(serializer.data, status=status.HTTP_200_OK)
         serializer = RegisterDataSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         return Response(serializer.data, status=status.HTTP_400_BAD_REQUEST)
@@ -157,7 +157,10 @@ class GenreViewSet(CreateListDestroyViewSet):
 class TitleViewSet(viewsets.ModelViewSet):
     """Вьюсет для создания обьектов класса Title."""
 
-    queryset = Title.objects.annotate(rating=Avg('reviews__score'))
+    queryset = Title.objects.annotate(
+        rating=Avg('reviews__score')).prefetch_related(
+        'category', 'genre'
+    )
     serializer_class = TitleSerializer
     permission_classes = (AnonimReadOnly | IsSuperUserOrIsAdminOnly,)
     filter_backends = (DjangoFilterBackend,)
@@ -167,7 +170,7 @@ class TitleViewSet(viewsets.ModelViewSet):
         """Определяет какой сериализатор будет использоваться
         для разных типов запроса."""
         if self.request.method == 'GET':
-            return TitleGETSerializer
+            return TitleReadSerializer
         return TitleSerializer
 
 
@@ -187,7 +190,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """Возвращает queryset c отзывами для текущего произведения."""
-        return self.get_title().reviews.all()
+        return self.get_title().reviews.select_related('author')
 
     def perform_create(self, serializer):
         """Создает отзыв для текущего произведения,
@@ -214,7 +217,7 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """Возвращает queryset c комментариями для текущего отзыва."""
-        return self.get_review().comments.all()
+        return self.get_review().comments.select_related('author')
 
     def perform_create(self, serializer):
         """Создает комментарий для текущего отзыва,

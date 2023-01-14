@@ -56,12 +56,15 @@ class User(AbstractUser):
 
     @property
     def is_admin(self):
-        return self.role == UserRoles.admin.name
+        """Проверка пользователя на наличие прав администратора."""
+        return self.role == UserRoles.admin.name or self.is_superuser
 
     @property
     def is_moderator(self):
+        """Проверка пользователя на наличие прав модератора."""
         return self.role == UserRoles.moderator.name
 
     @property
     def is_user(self):
+        """Проверка пользователя на наличие стандартных прав."""
         return self.role == UserRoles.user.name
