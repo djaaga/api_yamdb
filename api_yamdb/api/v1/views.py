@@ -31,30 +31,28 @@ class UserCreateViewSet(mixins.CreateModelMixin,
     def create(self, request):
         """Создает объект класса User и
         отправляет на почту пользователя код подтверждения."""
-        if 'username' in request.data and 'email' in request.data:
-            if User.objects.filter(
-                username=request.data['username'],
-                email=request.data['email']
-            ).exists():
-                user = get_object_or_404(
-                    User,
-                    username=request.data['username']
+        serializer = self.get_serializer(data=request.data)
+        user_filter_params = {
+            "username": serializer.initial_data.get("username"),
+            "email": serializer.initial_data.get("email"),
+        }
+        if User.objects.filter(**user_filter_params).exists():
+            user = User.objects.get(**user_filter_params)
+            confirmation_code = default_token_generator.make_token(user)
+            send_confirmation_code
+            return Response(request.data, status=status.HTTP_200_OK)
+        else:
+            serializer = UserCreateSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            user, _ = User.objects.get_or_create(
+                **serializer.validated_data
                 )
-                confirmation_code = default_token_generator.make_token(user)
-                send_confirmation_code
-                return Response(request.data, status=status.HTTP_200_OK)
-            else:
-                serializer = UserCreateSerializer(data=request.data)
-                serializer.is_valid(raise_exception=True)
-                user, _ = User.objects.get_or_create(
-                    **serializer.validated_data
-                    )
-                confirmation_code = default_token_generator.make_token(user)
-                send_confirmation_code(
-                    email=user.email,
-                    confirmation_code=confirmation_code
-                )
-                return Response(serializer.data, status=status.HTTP_200_OK)
+            confirmation_code = default_token_generator.make_token(user)
+            send_confirmation_code(
+                email=user.email,
+                confirmation_code=confirmation_code
+            )
+            return Response(serializer.data, status=status.HTTP_200_OK)
         serializer = RegisterDataSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         return Response(serializer.data, status=status.HTTP_400_BAD_REQUEST)
@@ -145,6 +143,7 @@ class CategoryViewSet(CreateListDestroyViewSet):
     serializer_class = CategorySerializer
     permission_classes = (IsAdminOrReadOnly,)
 
+
 class GenreViewSet(CreateListDestroyViewSet):
     """Вьюсет для создания обьектов класса Genre."""
 
@@ -176,7 +175,6 @@ class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     permission_classes = (IsAdminOrAuthor,)
 
-
     def get_title(self):
         """Возвращает объект текущего произведения."""
         title_id = self.kwargs.get('title_id')
@@ -200,7 +198,6 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     serializer_class = CommentSerializer
     permission_classes = (IsAdminOrAuthor,)
-
 
     def get_review(self):
         """Возвращает объект текущего отзыва."""
