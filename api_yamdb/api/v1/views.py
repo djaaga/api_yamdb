@@ -11,9 +11,7 @@ from users.models import User
 
 from .filters import TitleFilter
 from .mixins import CreateListDestroyViewSet
-from .permissions import (AnonimReadOnly,
-                          IsSuperUserIsAdminIsModeratorIsAuthor,
-                          IsSuperUserOrIsAdminOnly)
+from .permissions import IsAdmin, IsAdminOrAuthor, IsAdminOrReadOnly
 from .serializers import (CategorySerializer, CommentSerializer,
                           GenreSerializer, RegisterDataSerializer,
                           ReviewSerializer, TitleGETSerializer,
@@ -92,7 +90,7 @@ class UserViewSet(mixins.ListModelMixin,
 
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = (IsSuperUserOrIsAdminOnly,)
+    permission_classes = (IsAdmin,)
     filter_backends = (filters.SearchFilter,)
     search_fields = ('username',)
 
@@ -145,13 +143,14 @@ class CategoryViewSet(CreateListDestroyViewSet):
 
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-
+    permission_classes = (IsAdminOrReadOnly,)
 
 class GenreViewSet(CreateListDestroyViewSet):
     """Вьюсет для создания обьектов класса Genre."""
 
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
+    permission_classes = (IsAdminOrReadOnly,)
 
 
 class TitleViewSet(viewsets.ModelViewSet):
@@ -159,7 +158,7 @@ class TitleViewSet(viewsets.ModelViewSet):
 
     queryset = Title.objects.annotate(rating=Avg('reviews__score'))
     serializer_class = TitleSerializer
-    permission_classes = (AnonimReadOnly | IsSuperUserOrIsAdminOnly,)
+    permission_classes = (IsAdminOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = TitleFilter
 
@@ -175,10 +174,8 @@ class ReviewViewSet(viewsets.ModelViewSet):
     """Вьюсет для обьектов модели Review."""
 
     serializer_class = ReviewSerializer
-    permission_classes = (
-        permissions.IsAuthenticatedOrReadOnly,
-        IsSuperUserIsAdminIsModeratorIsAuthor
-    )
+    permission_classes = (IsAdminOrAuthor,)
+
 
     def get_title(self):
         """Возвращает объект текущего произведения."""
@@ -202,10 +199,8 @@ class CommentViewSet(viewsets.ModelViewSet):
     """Вьюсет для обьектов модели Comment."""
 
     serializer_class = CommentSerializer
-    permission_classes = (
-        permissions.IsAuthenticatedOrReadOnly,
-        IsSuperUserIsAdminIsModeratorIsAuthor
-    )
+    permission_classes = (IsAdminOrAuthor,)
+
 
     def get_review(self):
         """Возвращает объект текущего отзыва."""
