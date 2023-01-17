@@ -99,8 +99,7 @@ class UserViewSet(mixins.ListModelMixin,
         url_name='get_user'
     )
     def get_user_by_username(self, request, username):
-        """Обеспечивает получание данных пользователя по его username и
-        управление ими."""
+        """Обеспечивает управление пользователями для администраторов"""
         user = get_object_or_404(User, username=username)
         if request.method == 'PATCH':
             serializer = UserSerializer(user, data=request.data, partial=True)
