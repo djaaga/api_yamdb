@@ -1,3 +1,4 @@
+import django_filters
 from django.contrib.auth.tokens import default_token_generator
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
@@ -83,16 +84,27 @@ class UserReceiveTokenViewSet(mixins.CreateModelMixin,
         return Response(message, status=status.HTTP_200_OK)
 
 
+class UserFilters(django_filters.FilterSet):
+
+    class Meta:
+        model = User
+        fields = {
+            'username',
+        }
+
+
 class UserViewSet(mixins.ListModelMixin,
                   mixins.CreateModelMixin,
                   viewsets.GenericViewSet):
     """Вьюсет для обьектов модели User."""
-
-    queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = (IsAdmin,)
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ('username',)
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = UserFilters
+
+    def get_queryset(self):
+        user = self.request.user
+        return User.objects.filter(username=user)
 
     @action(
         detail=False,
