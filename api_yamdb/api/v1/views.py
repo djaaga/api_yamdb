@@ -84,23 +84,14 @@ class UserReceiveTokenViewSet(mixins.CreateModelMixin,
         return Response(message, status=status.HTTP_200_OK)
 
 
-class UserFilters(django_filters.FilterSet):
-
-    class Meta:
-        model = User
-        fields = {
-            'username',
-        }
-
-
 class UserViewSet(mixins.ListModelMixin,
                   mixins.CreateModelMixin,
                   viewsets.GenericViewSet):
     """Вьюсет для обьектов модели User."""
     serializer_class = UserSerializer
     permission_classes = (IsAdmin,)
-    filter_backends = (DjangoFilterBackend,)
-    filterset_class = UserFilters
+    filter_backends = (filters.SearchFilter,)
+    lookup_fields = ('username',)
 
     def get_queryset(self):
         user = self.request.user
