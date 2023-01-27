@@ -12,7 +12,8 @@ from users.models import User
 
 from .filters import TitleFilter
 from .mixins import CreateListDestroyViewSet
-from .permissions import IsAdmin, IsAdminOrReadOnly, IsModer, IsAdminUser, IsAuthor
+from .permissions import (IsAdmin, IsAdminOrReadOnly, IsAdminUser, IsAuthor,
+                          IsModer)
 from .serializers import (CategorySerializer, CommentSerializer,
                           GenreSerializer, RegisterDataSerializer,
                           ReviewSerializer, TitleReadSerializer,

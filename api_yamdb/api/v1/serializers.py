@@ -1,8 +1,8 @@
-import re
-
 from rest_framework import serializers
 from reviews.models import Category, Comment, Genre, Review, Title
 from users.models import User
+
+from .validators import validate_username
 
 
 class RegisterDataSerializer(serializers.ModelSerializer):
@@ -12,14 +12,7 @@ class RegisterDataSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(max_length=254)
 
     def validate_username(self, value):
-        if value.lower() == 'me':
-            raise serializers.ValidationError('User not valid')
-        if len(value) > 150:
-            raise serializers.ValidationError('Not mach len')
-        pattern_username = '[A-Za-z0-9+-_@]+'
-        if re.match(pattern_username, value) is None:
-            raise serializers.ValidationError('Incorrect symbol')
-        return value
+        return validate_username(value)
 
     class Meta:
         fields = ('username', 'email')
@@ -35,13 +28,11 @@ class UserCreateSerializer(serializers.ModelSerializer):
             'username', 'email'
         )
 
-    def validate(self, data):
-        """Запрещает пользователям присваивать себе имя me
-        и использовать повторные username и email."""
-        if data.get('username') == 'me':
-            raise serializers.ValidationError(
-                'Использовать имя me запрещено'
-            )
+    def validate_username(self, value):
+        return validate_username(value)
+
+    def validate_email_name(self, data):
+        """Запрещает пользователям использовать повторные username и email."""
         if User.objects.filter(username=data.get('username')):
             raise serializers.ValidationError(
                 'Пользователь с таким username уже существует'
@@ -70,18 +61,14 @@ class UserRecieveTokenSerializer(serializers.Serializer):
 class UserSerializer(serializers.ModelSerializer):
     """Сериализатор для модели User."""
 
+    def validate_username(self, value):
+        return validate_username(value)
+
     class Meta:
         model = User
         fields = (
             'username', 'email', 'first_name', 'last_name', 'bio', 'role'
         )
-
-    def validate_username(self, username):
-        if username in 'me':
-            raise serializers.ValidationError(
-                'Использовать имя me запрещено'
-            )
-        return username
 
     def validate_role(self, role):
         """Запрещает пользователям изменять себе роль."""
