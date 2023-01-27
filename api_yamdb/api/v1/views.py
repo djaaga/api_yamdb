@@ -12,7 +12,7 @@ from users.models import User
 
 from .filters import TitleFilter
 from .mixins import CreateListDestroyViewSet
-from .permissions import IsAdmin, IsAdminOrAuthor, IsAdminOrReadOnly
+from .permissions import IsAdmin, IsAdminOrReadOnly, IsModer, IsAdminUser, IsAuthor
 from .serializers import (CategorySerializer, CommentSerializer,
                           GenreSerializer, RegisterDataSerializer,
                           ReviewSerializer, TitleReadSerializer,
@@ -178,7 +178,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
     """Вьюсет для обьектов модели Review."""
 
     serializer_class = ReviewSerializer
-    permission_classes = (IsAdminOrAuthor,)
+    permission_classes = (IsAdminUser | IsModer | IsAuthor,)
 
     def get_title(self):
         """Возвращает объект текущего произведения."""
@@ -202,7 +202,7 @@ class CommentViewSet(viewsets.ModelViewSet):
     """Вьюсет для обьектов модели Comment."""
 
     serializer_class = CommentSerializer
-    permission_classes = (IsAdminOrAuthor,)
+    permission_classes = (IsAdminUser | IsModer | IsAuthor,)
 
     def get_review(self):
         """Возвращает объект текущего отзыва."""
